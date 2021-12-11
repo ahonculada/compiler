@@ -1,45 +1,54 @@
-use nom::{
-    branch::alt, 
-    bytes::complete::tag,
-    character::complete::char, 
-    combinator::map,
-    sequence::tuple,
-    IResult
-};
-
-fn parse_abc(input: &str) -> IResult<&str, char> {
-    alt((char('a'), char('b'), char('c'))) (input)
-}
-
-fn parse_abc_sequence(input: &str)
-    -> IResult<&str, (char, char, char)> {
-        tuple((char('a'), char('b'), char('c'))) (input)
-}
-
-fn parse_abc_string(input: &str) -> IResult<&str, &str> {
-    tag("abc") (input)
-}
-
-fn parse_abc_as_numbers(input: &str)
-    -> IResult<&str, u8> {
-        alt((
-                map(char('a'), |_| 5), 
-                map(char('b'), |_| 16),
-                map(char('c'), |_| 8),
-        )) (input)
-}
+mod parser;
 
 fn main() {
-    //println!("a: {:?}", parse_abc("a"));
-    //println!("x: {:?}", parse_abc("x"));
-    //println!("bjk: {:?}", parse_abc("bjk"));
-    //println!("abc: {:?}", parse_abc_sequence("abc"));
-    //println!("bca: {:?}", parse_abc_sequence("bca"));
-    //println!("abcjk: {:?}", parse_abc_sequence("abcjk"));
-    //println!("abc: {:?}", parse_abc_string("abc"));
-    //println!("bca: {:?}", parse_abc_string("bca"));
-    //println!("abcjk: {:?}", parse_abc_string("abcjk"));
-    println!("a: {:?}", parse_abc_as_numbers("a"));
-    println!("x: {:?}", parse_abc_as_numbers("x"));
-    println!("bjk: {:?}", parse_abc_as_numbers("bjk"));
+    let mut args = std::env::args();
+    let current_program_path = args.next().unwrap();
+    let source_path = args.next();
+    if source_path.is_none() {
+        eprintln!("{}: Missing argument <file>.calc", current_program_path);
+    } else {
+        process_file(&current_program_path, &source_path.unwrap());
+    }
+}
+
+fn process_file(current_program_path: &str, source_path: &str) {
+    const CALC_SUFFIX: &str = ".calc";
+    if !source_path.ends_with(CALC_SUFFIX) {
+        eprintln!(
+            "{}: Invalid argument '{}': It must end with {}",
+            current_program_path, source_path, CALC_SUFFIX
+        );
+        return;
+    }
+    let source_code = std::fs::read_to_string(&source_path);
+    if source_code.is_err() {
+        eprintln!(
+            "Failed to read from file {}: ({})",
+            source_path,
+            source_code.unwrap_err()
+        );
+        return;
+    }
+    let source_code = source_code.unwrap();
+
+    let parsed_program;
+    match parser::parse_program(&source_code) {
+        Ok((rest, syntax_tree)) => {
+            let trimmed_rest = rest.trim();
+            if trimmed_rest.len() > 0 {
+                eprintln!(
+                    "Invalid remaining code in '{}': {}",
+                    source_path, trimmed_rest
+                );
+                return;
+            }
+            parsed_program = syntax_tree;
+        }
+        Err(err) => {
+            eprintln!("Invalid code in '{}': {:?}", source_path, err);
+            return;
+        }
+    }
+    
+    println!("Parsed program: {:#?}", parsed_program);
 }
