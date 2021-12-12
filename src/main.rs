@@ -1,4 +1,5 @@
 mod analyzer;
+mod compiler;
 mod executor;
 mod parser;
 mod symbol_table;
@@ -8,7 +9,6 @@ fn main() {
     let current_program_path = args.next().unwrap();
     let source_path = args.next();
     if source_path.is_none() {
-        //eprintln!("{}: Missing argument <file>.calc", current_program_path);
         run_interpreter();
     } else {
         process_file(&current_program_path, &source_path.unwrap());
@@ -24,6 +24,7 @@ fn process_file(current_program_path: &str, source_path: &str) {
         );
         return;
     }
+    let target_path = source_path[0..source_path.len() - CALC_SUFFIX.len()].to_string() + ".rs";
     let source_code = std::fs::read_to_string(&source_path);
     if source_code.is_err() {
         eprintln!(
@@ -65,9 +66,14 @@ fn process_file(current_program_path: &str, source_path: &str) {
             return;
         }
     }
-    
-    println!("Symbol table: {:#?}", variables);
-    println!("Analyzed program: {:#?}", analyzed_program);
+
+    match std::fs::write(
+        &target_path,
+        compiler::translate_to_rust_program(&variables, &analyzed_program),
+    ) {
+        Ok(_) => eprintln!("Compiled {} to {}.", source_path, target_path),
+        Err(err) => eprintln!("Failed to write to file {}: {}", target_path, err),
+    }
 }
 
 fn run_interpreter() {
