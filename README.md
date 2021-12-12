@@ -6,7 +6,7 @@
 |parse_program| This parses the whole *Calc* program.|
 |parse_declaration|This parses a *Calc* declaration statment, such as @total.|
 |parse_input_statement|This parses a *Calc* input statment, such as >addend.|
-|parse_output_statement|This parses a *Calc* output statment.|
+|parse_output_statement|This parses a *Calc* output statment, such as <total.|
 |parse_assignment|This parses a *Calc* such as total := addend * 2.|
 |parse_expr|This parses a *Calc* expression, such as addend * 2 + val / (incr + 1).|
 |parse_term|This parses a *Calc* term, such as val / (incr + 1).|
